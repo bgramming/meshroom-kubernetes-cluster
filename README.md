@@ -1,189 +1,121 @@
-# 🎯 Meshroom Control Center v2.0
+﻿# Meshroom Kubernetes Cluster
 
-**Distributed 3D Photogrammetry Processing System**  
-Complete GUI-driven Kubernetes cluster management for multi-PC 3D reconstruction workflows.
+**Distributed 3D Photogrammetry Processing System**
 
-## 🚀 Quick Start
-
-### From Server (Recommended)
-1. **Deploy to Server**: Run `deploy-to-server.ps1`
-2. **Create Shortcuts**: Run `create-shortcuts.ps1` on each PC
-3. **Launch**: Double-click desktop shortcut
-
-### Local Development
-1. **Launch GUI**: `launchers\Meshroom.bat`
-2. **Admin Mode**: `launchers\launch-meshroom-admin.bat`
-
-## 📁 Project Structure
-
-```
-Meshroom-Control-Center/
-├── 📱 gui/                     # Main GUI application
-├── 🔧 scripts/                 # PowerShell automation scripts  
-├── 🐳 cluster/                 # Kubernetes & Docker configs
-├── 📚 docs/                    # Documentation
-├── 🤖 ai/                      # Claude AI Agent
-├── 📄 launchers/               # Application entry points
-└── 📋 logs/                    # System logs
-```
-
-## ✨ Features
-
-### 🎯 Dashboard
-- **Quick Actions** → All setup functions as buttons
-- **Live Terminal** → Integrated CLI with command execution
-- **System Status** → Real-time health monitoring
-- **Quick Commands** → kubectl, docker shortcuts
-
-### ⚙️ Setup & Management
-- **Smart Setup** → Automated master/worker configuration
-- **Pod Deployment** → One-click Kubernetes deployment
-- **NAS Integration** → Secure credential management
-- **Multi-PC Support** → Distributed processing setup
-
-### 🔧 Advanced Features
-- **Command History** → Terminal with ↑/↓ navigation
-- **Log Export** → Save all operations to file
-- **Auto-Updates** → Git-based synchronization
-- **Error Handling** → Clear status indicators
-
-## 🖥️ Multi-System Deployment
-
-### Server Setup
-```powershell
-# Deploy to server
-.\deploy-to-server.ps1 -InitGit
-
-# Map network drives on each PC
-.\create-shortcuts.ps1
-```
-
-### System Roles
-- **Master PC (10.0.0.226)** → Kubernetes control plane + processing
-- **Worker PC** → Additional processing nodes
-- **NAS (10.0.0.80)** → Shared storage for photos/results
-
-## 🔄 Version Control
-
-### Git Workflow
-```bash
-# Development
-git checkout -b feature/new-feature
-git commit -m "Add new feature"
-
-# Release
-git checkout main
-git merge feature/new-feature
-git tag v2.0.0
-```
-
-### Automatic Updates
-Both PCs automatically sync changes when connected to server deployment.
-
-## 📋 Requirements
-
-### Software
-- **Python 3.7+** with tkinter
-- **Docker Desktop** with Kubernetes enabled
-- **PowerShell 5.1+**
-- **Windows 10+**
-
-### Hardware
-- **Master PC**: 16GB+ RAM, SSD storage
-- **Worker PC**: 8GB+ RAM, network access
-- **NAS**: SMB share with read/write access
-
-### Network
-- **All PCs**: Same network subnet
-- **NAS Access**: SMB/CIFS protocol
-- **Internet**: For Docker image downloads
-
-## 🎯 Usage
-
-### First Time Setup
-1. **Launch GUI** → Use desktop shortcut
-2. **Configure Network** → Setup tab → Enter IPs
-3. **Setup Master** → Click "Setup Master Node (Smart)"
-4. **Deploy Pods** → Click "Deploy Meshroom Pods"
-5. **Add Workers** → Run on other PCs with worker setup
-
-### Daily Operation
-1. **Upload Photos** → Storage tab → Upload to input folder
-2. **Start Processing** → Workflows tab → Start photogrammetry
-3. **Monitor Progress** → Dashboard terminal shows live updates
-4. **Download Results** → Storage tab → Browse output folder
-
-## 🔧 Troubleshooting
-
-### Common Issues
-- **No GUI Response** → Check terminal output in dashboard
-- **Pods Not Starting** → Use "Test Connection" button
-- **NAS Access Issues** → Update credentials in Setup tab
-- **Network Problems** → Verify IP addresses in configuration
-
-### Support Commands
-```bash
-# In dashboard terminal
-kubectl get pods -n meshroom     # Check pod status
-kubectl get nodes               # Check cluster nodes
-docker ps                       # Running containers
-kubectl logs -n meshroom <pod>  # Pod logs
-```
-
-## 📚 Documentation
-
-- **[Setup Guide](docs/SETUP_GUIDE.md)** → Complete installation instructions
-- **[GUI Usage](GUI-USAGE-GUIDE.md)** → Interface walkthrough
-- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** → Server setup instructions
-
-## 🤖 AI Assistant
-
-**Claude Agent** provides intelligent monitoring and troubleshooting:
-- **Automatic Issue Detection** → Proactive problem identification
-- **Smart Recommendations** → Context-aware solutions
-- **System Optimization** → Performance tuning suggestions
-
-## 🔐 Security
-
-### Data Protection
-- **Encrypted Credentials** → Secure NAS password storage
-- **Network Isolation** → Kubernetes namespace separation
-- **Access Control** → Role-based permissions
-
-### Backup Strategy
-- **Git Versioning** → All configuration changes tracked
-- **Server Storage** → Centralized file management
-- **Log Retention** → Comprehensive audit trail
-
-## 🎯 Roadmap
-
-### v2.1 (Planned)
-- [ ] Web-based monitoring interface
-- [ ] Mobile app for remote monitoring
-- [ ] Advanced workflow templates
-- [ ] Cloud backup integration
-
-### v2.2 (Future)
-- [ ] Multi-cluster support
-- [ ] Enhanced AI capabilities
-- [ ] Performance analytics dashboard
-- [ ] Automated scaling
-
-## 🤝 Contributing
-
-### Development Setup
-1. Clone from server deployment
-2. Create feature branch
-3. Test on local system
-4. Submit for review
-
-### Code Standards
-- **PowerShell**: Follow best practices
-- **Python**: PEP 8 compliance
-- **Documentation**: Update all relevant files
+A complete Kubernetes-based solution for accelerated 3D model generation from photos using Meshroom.
 
 ---
 
-**Ready for distributed 3D processing!** 🚀
+## ðŸš€ Features
 
-*For support, check the docs or run the AI assistant with troubleshooting mode.*
+- **Kubernetes Orchestration:** Distributed processing across multiple nodes
+- **Docker Containers:** Coordinator and worker containers
+- **GUI Control Center:** Easy-to-use interface for managing the cluster
+- **Processing Scripts:** 7 production-ready Python scripts for various 3D workflows
+- **GPU Acceleration:** Optimized for AMD Radeon RX 580 and similar GPUs
+- **Complete Documentation:** Setup guides, troubleshooting, and examples
+
+---
+
+## ðŸ“ Project Structure
+
+```
+meshroom-kubernetes-cluster/
+â”œâ”€â”€ gui/                          # Control Center GUI
+â”‚   â””â”€â”€ launch-control-center.bat
+â”œâ”€â”€ docker/                       # Docker configurations
+â”‚   â”œâ”€â”€ coordinator/
+â”‚   â””â”€â”€ workers/
+â”œâ”€â”€ kubernetes/                   # K8s manifests
+â”œâ”€â”€ scripts/                      # Processing Scripts (NEW!)
+â”‚   â”œâ”€â”€ realistic-meshroom-processing.py
+â”‚   â”œâ”€â”€ actual-meshroom-processing.py
+â”‚   â”œâ”€â”€ real-meshroom-processing.py
+â”‚   â”œâ”€â”€ meshroom-native-processing.py
+â”‚   â”œâ”€â”€ process-photos-simple.py
+â”‚   â”œâ”€â”€ process-photos.py
+â”‚   â””â”€â”€ quick-valid-3d.py
+â””â”€â”€ docs/                         # Documentation
+```
+
+---
+
+## ðŸ› ï¸ Processing Scripts
+
+### 1. **realistic-meshroom-processing.py**
+Full-featured 3D reconstruction with all Meshroom nodes.
+
+### 2. **actual-meshroom-processing.py**
+Optimized workflow for faster processing.
+
+### 3. **real-meshroom-processing.py**
+Simplified pipeline for quick results.
+
+### 4. **meshroom-native-processing.py**
+Native Meshroom API integration.
+
+### 5. **process-photos-simple.py**
+Basic photo-to-3D conversion.
+
+### 6. **process-photos.py**
+Advanced processing with custom parameters.
+
+### 7. **quick-valid-3d.py**
+Fast validation and quality checks.
+
+---
+
+## ðŸš€ Quick Start
+
+### Launch Control Center:
+```bash
+cd gui
+./launch-control-center.bat
+```
+
+### Run Processing Scripts:
+```bash
+cd scripts
+python realistic-meshroom-processing.py /path/to/photos
+```
+
+---
+
+## ðŸ’» Requirements
+
+- **Kubernetes:** v1.20+
+- **Docker:** v20.10+
+- **Python:** 3.8+
+- **GPU:** AMD Radeon RX 580 or similar (8GB+ VRAM)
+- **Meshroom:** 2021.1.0+
+
+---
+
+## ðŸ“š Documentation
+
+See docs/ folder for:
+- Setup guides
+- Kubernetes configuration
+- Docker deployment
+- Script usage examples
+- Troubleshooting
+
+---
+
+## ðŸŽ¯ Status
+
+**Production Ready** - 100% Operational
+
+---
+
+## ðŸ“ License
+
+MIT License
+
+---
+
+## ðŸ”— Links
+
+- **GitHub:** https://github.com/bgramming/meshroom-kubernetes-cluster
+- **Meshroom:** https://alicevision.org/
+
