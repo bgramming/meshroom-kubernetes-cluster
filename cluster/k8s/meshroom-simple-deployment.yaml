@@ -1,0 +1,42 @@
+# Simple Meshroom deployment that works
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshroom-simple
+  namespace: meshroom
+  labels:
+    app: meshroom
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meshroom
+  template:
+    metadata:
+      labels:
+        app: meshroom
+    spec:
+      serviceAccountName: meshroom-sa
+      containers:
+      - name: meshroom
+        image: localhost:5000/meshroom-base:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: meshroom-data
+          mountPath: /data
+        env:
+        - name: NODE_ENV
+          value: "production"
+      volumes:
+      - name: meshroom-data
+        persistentVolumeClaim:
+          claimName: meshroom-storage-pvc

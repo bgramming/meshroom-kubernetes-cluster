@@ -1,0 +1,215 @@
+# Meshroom Coordinator Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshroom-coordinator
+  namespace: meshroom
+  labels:
+    app: meshroom
+    component: coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meshroom
+      component: coordinator
+  template:
+    metadata:
+      labels:
+        app: meshroom
+        component: coordinator
+    spec:
+      serviceAccountName: meshroom-sa
+      containers:
+      - name: coordinator
+        image: meshroom-coordinator:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: MAX_WORKERS
+          value: "8"
+        - name: REDIS_URL
+          value: "redis://meshroom-redis:6379"
+        - name: STORAGE_PATH
+          value: "/data"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: meshroom-data
+          mountPath: /data
+        - name: coordinator-config
+          mountPath: /config
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: meshroom-data
+        persistentVolumeClaim:
+          claimName: meshroom-storage-pvc
+      - name: coordinator-config
+        configMap:
+          name: meshroom-storage-config
+---
+# Meshroom Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshroom-worker
+  namespace: meshroom
+  labels:
+    app: meshroom
+    component: worker
+spec:
+  replicas: 2  # One worker per AMD PC
+  selector:
+    matchLabels:
+      app: meshroom
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: meshroom
+        component: worker
+    spec:
+      serviceAccountName: meshroom-sa
+      # Node affinity to distribute workers across PCs
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - meshroom
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: worker
+        image: meshroom-worker:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: WORKER_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: REDIS_URL
+          value: "redis://meshroom-redis:6379"
+        - name: MAX_WORKERS
+          value: "4"
+        - name: MEMORY_LIMIT
+          value: "8G"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "16Gi"
+            cpu: "4000m"
+        volumeMounts:
+        - name: meshroom-data
+          mountPath: /data
+        - name: worker-config
+          mountPath: /config
+        - name: gpu-lib
+          mountPath: /usr/lib/x86_64-linux-gnu
+          readOnly: true
+        livenessProbe:
+          exec:
+            command:
+            - python3
+            - /opt/worker-scripts/health_check.py
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - python3
+            - /opt/worker-scripts/ready_check.py
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: meshroom-data
+        persistentVolumeClaim:
+          claimName: meshroom-storage-pvc
+      - name: worker-config
+        configMap:
+          name: meshroom-storage-config
+      - name: gpu-lib
+        hostPath:
+          path: /usr/lib/x86_64-linux-gnu
+          type: Directory
+---
+# Redis for job queue
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meshroom-redis
+  namespace: meshroom
+  labels:
+    app: meshroom
+    component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meshroom
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: meshroom
+        component: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "256mb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+      volumes:
+      - name: redis-data
+        emptyDir: {} 

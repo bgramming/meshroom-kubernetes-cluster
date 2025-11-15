@@ -1,0 +1,95 @@
+# Meshroom Coordinator Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshroom-coordinator
+  namespace: meshroom
+  labels:
+    app: meshroom
+    component: coordinator
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: meshroom
+    component: coordinator
+---
+# Meshroom Worker Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshroom-worker
+  namespace: meshroom
+  labels:
+    app: meshroom
+    component: worker
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: meshroom
+    component: worker
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: meshroom-redis
+  namespace: meshroom
+  labels:
+    app: meshroom
+    component: redis
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: meshroom
+    component: redis
+---
+# Ingress for external access (optional)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: meshroom-ingress
+  namespace: meshroom
+  labels:
+    app: meshroom
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: meshroom.local  # Update with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: meshroom-coordinator
+            port:
+              number: 8080
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: meshroom-coordinator
+            port:
+              number: 9090 

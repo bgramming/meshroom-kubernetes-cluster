@@ -1,0 +1,60 @@
+# Persistent Volume for shared Meshroom storage
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: meshroom-pv
+  labels:
+    app: meshroom
+    type: shared-storage
+spec:
+  capacity:
+    storage: 500Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    # UPDATE THESE VALUES FOR YOUR SYNOLOGY NAS
+    server: 192.168.1.100  # Replace with your NAS IP
+    path: /volume1/meshroom  # Replace with your NAS path
+  mountOptions:
+    - hard
+    - nfsvers=4
+    - nolock
+    - tcp
+---
+# Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meshroom-storage-pvc
+  namespace: meshroom
+  labels:
+    app: meshroom
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Gi
+  selector:
+    matchLabels:
+      app: meshroom
+      type: shared-storage
+---
+# ConfigMap for storage paths
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meshroom-storage-config
+  namespace: meshroom
+  labels:
+    app: meshroom
+data:
+  input-path: "/data/input"
+  work-path: "/data/work"
+  output-path: "/data/output"
+  temp-path: "/data/temp"
+  # Storage performance settings
+  io-priority: "high"
+  cache-size: "2G"
+  max-connections: "10" 

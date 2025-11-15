@@ -1,0 +1,40 @@
+# Local storage for Docker Desktop development
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: meshroom-local-pv
+  labels:
+    app: meshroom
+    type: local-storage
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  hostPath:
+    path: C:\meshroom-data
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meshroom-storage-pvc
+  namespace: meshroom
+  labels:
+    app: meshroom
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: local-storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer

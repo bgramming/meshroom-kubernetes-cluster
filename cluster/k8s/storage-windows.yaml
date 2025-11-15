@@ -1,0 +1,48 @@
+﻿apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: meshroom-nas-storage-pv
+  namespace: meshroom
+spec:
+  capacity:
+    storage: 100Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nas-storage
+  csi:
+    driver: smb.csi.k8s.io
+    readOnly: false
+    volumeAttributes:
+      source: "//10.0.0.80/meshroom"
+      csi.storage.k8s.io/provisioner-secret-name: "smbcreds"
+      csi.storage.k8s.io/provisioner-secret-namespace: "default"
+      csi.storage.k8s.io/node-publish-secret-name: "smbcreds"
+      csi.storage.k8s.io/node-publish-secret-namespace: "default"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: meshroom-storage-pvc
+  namespace: meshroom
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: nas-storage
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nas-storage
+provisioner: smb.csi.k8s.io
+parameters:
+  source: "//10.0.0.80/meshroom"
+  csi.storage.k8s.io/provisioner-secret-name: "smbcreds"
+  csi.storage.k8s.io/provisioner-secret-namespace: "default"
+  csi.storage.k8s.io/node-publish-secret-name: "smbcreds"
+  csi.storage.k8s.io/node-publish-secret-namespace: "default"
+reclaimPolicy: Retain
+volumeBindingMode: Immediate

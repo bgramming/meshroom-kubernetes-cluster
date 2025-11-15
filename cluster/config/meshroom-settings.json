@@ -1,0 +1,73 @@
+{
+  "photogrammetry": {
+    "feature_extraction": {
+      "quality": "high",
+      "force_gpu": true,
+      "max_features": 10000,
+      "contrast_threshold": 0.04,
+      "edge_threshold": 10,
+      "peak_threshold": 0.01
+    },
+    "depth_maps": {
+      "quality": "high",
+      "force_gpu": true,
+      "downscale": 1,
+      "min_depth": 0.1,
+      "max_depth": 100.0,
+      "samples_per_side": 6
+    },
+    "meshing": {
+      "quality": "high",
+      "force_gpu": true,
+      "max_points": 50000000,
+      "max_faces": 10000000,
+      "min_observations": 3,
+      "filtering": true
+    },
+    "texturing": {
+      "quality": "high",
+      "force_gpu": true,
+      "downscale": 1,
+      "fill_holes": true,
+      "unwrap_method": "angle",
+      "max_texture_size": 8192
+    }
+  },
+  "distributed_processing": {
+    "max_workers_per_node": 4,
+    "memory_limit_per_worker": "8G",
+    "cpu_limit_per_worker": "4000m",
+    "gpu_enabled": true,
+    "batch_size": 50,
+    "parallel_jobs": 2
+  },
+  "storage": {
+    "input_path": "/data/input",
+    "work_path": "/data/work",
+    "output_path": "/data/output",
+    "temp_path": "/data/temp",
+    "cache_size": "2G",
+    "max_connections": 10
+  },
+  "monitoring": {
+    "metrics_enabled": true,
+    "log_level": "INFO",
+    "progress_reporting": true,
+    "health_check_interval": 30,
+    "performance_tracking": true
+  },
+  "gpu": {
+    "platform": "amd",
+    "rocm_version": "5.0",
+    "opencl_enabled": true,
+    "memory_pool_size": "4G",
+    "compute_units": "auto"
+  },
+  "workflow": {
+    "auto_split_photos": true,
+    "merge_strategy": "smart",
+    "quality_control": true,
+    "backup_intermediate": true,
+    "cleanup_temp": true
+  }
+} 

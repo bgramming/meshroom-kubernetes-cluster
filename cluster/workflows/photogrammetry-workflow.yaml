@@ -1,0 +1,327 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: meshroom-photogrammetry
+  namespace: meshroom
+  labels:
+    app: meshroom
+    workflow-type: photogrammetry
+spec:
+  serviceAccountName: meshroom-sa
+  entrypoint: photogrammetry-pipeline
+  arguments:
+    parameters:
+    - name: input-path
+      value: "/data/input"
+    - name: output-path
+      value: "/data/output"
+    - name: photo-count
+      value: "100"
+    - name: quality
+      value: "high"
+    - name: gpu-enabled
+      value: "true"
+  
+  # Workflow templates
+  templates:
+  - name: photogrammetry-pipeline
+    dag:
+      tasks:
+      - name: validate-input
+        template: validate-input
+        arguments:
+          parameters:
+          - name: input-path
+            value: "{{workflow.parameters.input-path}}"
+      
+      - name: split-photos
+        template: split-photos
+        depends: validate-input
+        arguments:
+          parameters:
+          - name: input-path
+            value: "{{workflow.parameters.input-path}}"
+          - name: photo-count
+            value: "{{workflow.parameters.photo-count}}"
+      
+      - name: feature-extraction-pc1
+        template: feature-extraction
+        depends: split-photos
+        arguments:
+          parameters:
+          - name: input-path
+            value: "{{workflow.parameters.input-path}}/part1"
+          - name: work-path
+            value: "/data/work/features_pc1"
+          - name: node-selector
+            value: "gpu: amd"
+      
+      - name: feature-extraction-pc2
+        template: feature-extraction
+        depends: split-photos
+        arguments:
+          parameters:
+          - name: input-path
+            value: "{{workflow.parameters.input-path}}/part2"
+          - name: work-path
+            value: "/data/work/features_pc2"
+          - name: node-selector
+            value: "gpu: amd"
+      
+      - name: merge-features
+        template: merge-features
+        depends: [feature-extraction-pc1, feature-extraction-pc2]
+        arguments:
+          parameters:
+          - name: work-path
+            value: "/data/work/features_merged"
+      
+      - name: depth-maps-pc1
+        template: depth-maps
+        depends: merge-features
+        arguments:
+          parameters:
+          - name: work-path
+            value: "/data/work/features_merged"
+          - name: output-path
+            value: "/data/work/depth_pc1"
+          - name: node-selector
+            value: "gpu: amd"
+      
+      - name: depth-maps-pc2
+        template: depth-maps
+        depends: merge-features
+        arguments:
+          parameters:
+          - name: work-path
+            value: "/data/work/features_merged"
+          - name: output-path
+            value: "/data/work/depth_pc2"
+          - name: node-selector
+            value: "gpu: amd"
+      
+      - name: merge-depth-maps
+        template: merge-depth-maps
+        depends: [depth-maps-pc1, depth-maps-pc2]
+        arguments:
+          parameters:
+          - name: work-path
+            value: "/data/work/depth_merged"
+      
+      - name: meshing
+        template: meshing
+        depends: merge-depth-maps
+        arguments:
+          parameters:
+          - name: work-path
+            value: "/data/work/depth_merged"
+          - name: output-path
+            value: "/data/work/mesh"
+          - name: quality
+            value: "{{workflow.parameters.quality}}"
+      
+      - name: texturing
+        template: texturing
+        depends: meshing
+        arguments:
+          parameters:
+          - name: work-path
+            value: "/data/work/mesh"
+          - name: output-path
+            value: "{{workflow.parameters.output-path}}"
+          - name: quality
+            value: "{{workflow.parameters.quality}}"
+      
+      - name: finalize
+        template: finalize
+        depends: texturing
+        arguments:
+          parameters:
+          - name: output-path
+            value: "{{workflow.parameters.output-path}}"
+  
+  # Template definitions
+  - name: validate-input
+    inputs:
+      parameters:
+      - name: input-path
+    container:
+      image: meshroom-worker:latest
+      command: [python3]
+      args: ["/opt/worker-scripts/validate_input.py", "--input", "{{inputs.parameters.input-path}}"]
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: split-photos
+    inputs:
+      parameters:
+      - name: input-path
+      - name: photo-count
+    container:
+      image: meshroom-worker:latest
+      command: [python3]
+      args: ["/opt/worker-scripts/split_photos.py", "--input", "{{inputs.parameters.input-path}}", "--count", "{{inputs.parameters.photo-count}}"]
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: feature-extraction
+    inputs:
+      parameters:
+      - name: input-path
+      - name: work-path
+      - name: node-selector
+    nodeSelector:
+      kubernetes.io/hostname: "{{inputs.parameters.node-selector}}"
+    container:
+      image: meshroom-worker:latest
+      command: [meshroom_photogrammetry]
+      args: ["--input", "{{inputs.parameters.input-path}}", "--output", "{{inputs.parameters.work-path}}", "--save", "--forceGPU"]
+      resources:
+        requests:
+          memory: "8Gi"
+          cpu: "4000m"
+        limits:
+          memory: "16Gi"
+          cpu: "8000m"
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: merge-features
+    inputs:
+      parameters:
+      - name: work-path
+    container:
+      image: meshroom-worker:latest
+      command: [python3]
+      args: ["/opt/worker-scripts/merge_features.py", "--work-path", "{{inputs.parameters.work-path}}"]
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: depth-maps
+    inputs:
+      parameters:
+      - name: work-path
+      - name: output-path
+      - name: node-selector
+    nodeSelector:
+      kubernetes.io/hostname: "{{inputs.parameters.node-selector}}"
+    container:
+      image: meshroom-worker:latest
+      command: [aliceVision_depthMapEstimation]
+      args: ["--input", "{{inputs.parameters.work-path}}", "--output", "{{inputs.parameters.output-path}}", "--forceGPU"]
+      resources:
+        requests:
+          memory: "8Gi"
+          cpu: "4000m"
+        limits:
+          memory: "16Gi"
+          cpu: "8000m"
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: merge-depth-maps
+    inputs:
+      parameters:
+      - name: work-path
+    container:
+      image: meshroom-worker:latest
+      command: [python3]
+      args: ["/opt/worker-scripts/merge_depth_maps.py", "--work-path", "{{inputs.parameters.work-path}}"]
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: meshing
+    inputs:
+      parameters:
+      - name: work-path
+      - name: output-path
+      - name: quality
+    container:
+      image: meshroom-worker:latest
+      command: [aliceVision_meshing]
+      args: ["--input", "{{inputs.parameters.work-path}}", "--output", "{{inputs.parameters.output-path}}", "--quality", "{{inputs.parameters.quality}}"]
+      resources:
+        requests:
+          memory: "8Gi"
+          cpu: "4000m"
+        limits:
+          memory: "16Gi"
+          cpu: "8000m"
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: texturing
+    inputs:
+      parameters:
+      - name: work-path
+      - name: output-path
+      - name: quality
+    container:
+      image: meshroom-worker:latest
+      command: [aliceVision_texturing]
+      args: ["--input", "{{inputs.parameters.work-path}}", "--output", "{{inputs.parameters.output-path}}", "--quality", "{{inputs.parameters.quality}}"]
+      resources:
+        requests:
+          memory: "8Gi"
+          cpu: "4000m"
+        limits:
+          memory: "16Gi"
+          cpu: "8000m"
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc
+  
+  - name: finalize
+    inputs:
+      parameters:
+      - name: output-path
+    container:
+      image: meshroom-worker:latest
+      command: [python3]
+      args: ["/opt/worker-scripts/finalize.py", "--output", "{{inputs.parameters.output-path}}"]
+      volumeMounts:
+      - name: meshroom-data
+        mountPath: /data
+    volumes:
+    - name: meshroom-data
+      persistentVolumeClaim:
+        claimName: meshroom-pvc 

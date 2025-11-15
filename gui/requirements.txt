@@ -1,0 +1,5 @@
+tkinter
+subprocess32
+psutil
+requests
+pyyaml 

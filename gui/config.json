@@ -1,0 +1,38 @@
+{
+  "cluster": {
+    "namespace": "meshroom",
+    "refresh_interval": 30,
+    "auto_refresh": true,
+    "log_level": "INFO"
+  },
+  "workflows": {
+    "default_workflow": "workflows/photogrammetry-workflow.yaml",
+    "auto_start": false,
+    "save_logs": true,
+    "log_directory": "./logs"
+  },
+  "ui": {
+    "theme": "dark",
+    "window_size": "1200x800",
+    "show_advanced": false,
+    "language": "en"
+  },
+  "monitoring": {
+    "enable_alerts": true,
+    "alert_thresholds": {
+      "cpu_usage": 80,
+      "memory_usage": 85,
+      "pod_restarts": 5
+    },
+    "notifications": {
+      "workflow_complete": true,
+      "workflow_failed": true,
+      "cluster_issues": true
+    }
+  },
+  "storage": {
+    "input_path": "/data/input",
+    "output_path": "/data/output",
+    "work_path": "/data/work"
+  }
+} 
